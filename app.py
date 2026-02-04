@@ -1,37 +1,47 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from detailed_scraping import scrape_single_college
-from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
+from bson import ObjectId
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Production mein ise apne frontend URL se replace karein
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-class ScrapeRequest(BaseModel):
-    url: str
-
-@app.get("/")
-def home():
-    return {"status": "StudyCups Python Scraper Running"}
+client = MongoClient(MONGO_URI)
+db = client["studycups"]
+collection = db["college_course_test"]
 
 @app.post("/scrape")
-def scrape(req: ScrapeRequest):
-    try:
-        data = scrape_single_college(req.url)
+async def scrape(data: dict):
+    url = data["url"]
+    job_id = data["jobId"]
 
-        return {
-            "success": True,
-            "data": data   # ✅ PURE JSON
-        }
+    try:
+        # 🔄 status = running
+        collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {"$set": {"status": "running", "progress": 10}}
+        )
+
+        scraped = run_full_scraper(url)  # tumhara existing logic
+
+        # ✅ FINAL WRITE BACK
+        collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {
+                "$set": {
+                    **scraped,
+                    "status": "completed",
+                    "progress": 100,
+                    "completedAt": datetime.utcnow()
+                }
+            }
+        )
+
+        return {"success": True}
 
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        collection.update_one(
+            {"_id": ObjectId(job_id)},
+            {
+                "$set": {
+                    "status": "error",
+                    "error": str(e)
+                }
+            }
+        )
+        return {"success": False, "error": str(e)}

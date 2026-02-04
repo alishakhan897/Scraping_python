@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pydantic
+pydantic<3
 greenlet==3.0.3
 playwright==1.42.0
 python-dotenv
