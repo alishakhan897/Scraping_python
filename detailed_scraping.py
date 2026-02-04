@@ -21,15 +21,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 # timer.start()
 
 
-load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = "studycups"
-
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-
-detail_collection = db["college_course_test"] 
 
 
 

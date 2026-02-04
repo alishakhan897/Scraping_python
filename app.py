@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from detailed_scraping import scrape_single_college
 
 app = FastAPI()
 
@@ -12,11 +13,16 @@ def home():
 
 @app.post("/scrape")
 def scrape(req: ScrapeRequest):
-    url = req.url
+    try:
+        data = scrape_single_college(req.url)
 
-    # 🔹 abhi sirf test response
-    return {
-        "success": True,
-        "message": "URL received successfully",
-        "url": url
-    }
+        return {
+            "success": True,
+            "data": data   # 🔑 THIS IS CRITICAL
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
