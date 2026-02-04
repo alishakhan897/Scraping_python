@@ -8,8 +8,20 @@ import os
 import signal 
 import warnings 
 import json
+
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
+
+load_dotenv()
+
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("DB_NAME", "studycups")
+TEMP_COLLECTION = os.getenv("TEMP_COLLECTION", "college_course_test")
+
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+detail_collection = db[TEMP_COLLECTION]
 
 
 
@@ -1615,8 +1627,8 @@ def scrape_single_college(url):
     with sync_playwright() as p:
 
         browser = p.chromium.launch(
-            headless=False,
-            slow_mo=100,
+            headless=True,
+            slow_mo=0,
             args=[
                 "--disable-notifications",
                 "--disable-geolocation",
@@ -1721,30 +1733,30 @@ def scrape_single_college(url):
 # RUN (API MODE)
 ###############################################################
 
-if __name__ == "__main__":
+## if __name__ == "__main__":
 
-    if len(sys.argv) < 2:
-        print(json.dumps({"error": "URL argument missing"}))
-        sys.exit(1)
+  ##  if len(sys.argv) < 2:
+      ##   print(json.dumps({"error": "URL argument missing"}))
+      ##   sys.exit(1)
 
-    url = sys.argv[1]
+   ##  url = sys.argv[1]
 
-    try:
-        final_data = scrape_single_college(url)
+   ##  try:
+    ##     final_data = scrape_single_college(url)
 
-        if final_data:
-            # ✅ TEMP DB SAVE (studycups)
-            result = detail_collection.insert_one(final_data)
+       ##  if final_data:
+       ##      # ✅ TEMP DB SAVE (studycups)
+       ##      result = detail_collection.insert_one(final_data)
 
             # ✅ ONLY _id for backend
-            print(str(result.inserted_id), flush=True)
+        ##     print(str(result.inserted_id), flush=True)
 
 
 
-        else:
-            print(json.dumps({"error": "No data returned"}))
+        ## else:
+        ##     print(json.dumps({"error": "No data returned"}))
 
-    except Exception as e:
-            print(json.dumps({"success": False,"error": str(e)}, ensure_ascii=False))
-            sys.exit(0)   # ✅ VERY IMPORTANT
+   ##  except Exception as e:
+     ##        print(json.dumps({"success": False,"error": str(e)}, ensure_ascii=False))
+   ##          sys.exit(0)   # ✅ VERY IMPORTANT
 
