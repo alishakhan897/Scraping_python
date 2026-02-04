@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright
-from pymongo import MongoClient
+#from pymongo import MongoClient
 from dotenv import load_dotenv
 import os, time
 import sys
@@ -15,13 +15,13 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGO_URI")
-DB_NAME = os.getenv("DB_NAME", "studycups")
-TEMP_COLLECTION = os.getenv("TEMP_COLLECTION", "college_course_test")
+#MONGO_URI = os.getenv("MONGO_URI")
+#DB_NAME = os.getenv("DB_NAME", "studycups")
+#TEMP_COLLECTION = os.getenv("TEMP_COLLECTION", "college_course_test")
 
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-detail_collection = db[TEMP_COLLECTION]
+#client = MongoClient(MONGO_URI)
+#db = client[DB_NAME]
+#detail_collection = db[TEMP_COLLECTION]
 
 
 

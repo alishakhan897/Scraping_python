@@ -18,7 +18,7 @@ def scrape(req: ScrapeRequest):
 
         return {
             "success": True,
-            "data": data   # 🔑 THIS IS CRITICAL
+            "data": data   # ✅ PURE JSON
         }
 
     except Exception as e:
