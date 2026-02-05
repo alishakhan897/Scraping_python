@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime
 import os
+from detailed_scraping import scrape_single_college
 
 app = FastAPI()
 
@@ -13,8 +14,6 @@ collection = db["college_course_test"]
 
 @app.post("/scrape")
 async def scrape(payload: dict):
-    print("📩 PAYLOAD:", payload)
-
     url = payload.get("url")
     job_id = payload.get("jobId")
 
@@ -24,16 +23,14 @@ async def scrape(payload: dict):
     try:
         oid = ObjectId(job_id)
 
-        # running
         collection.update_one(
             {"_id": oid},
             {"$set": {"status": "running", "progress": 10}}
         )
 
-        # TODO: tumhara scraper
+        # ✅ NOW Python knows this function
         scraped = scrape_single_college(url)
 
-        # completed
         collection.update_one(
             {"_id": oid},
             {
