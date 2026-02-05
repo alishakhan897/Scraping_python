@@ -8,7 +8,7 @@ import os
 import signal 
 import warnings 
 import json
-
+import logging
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -31,7 +31,12 @@ def safe_goto(page, url, wait=2000):
     page.wait_for_timeout(wait)
     nuke_popups(page)
 
-
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+logger = logging.getLogger(__name__)
 
 def handle_popups(page):
     selectors = [
@@ -1602,12 +1607,13 @@ def nuke_popups(page):
 
 
 def scrape_single_college(url):
+    logger.info(f"🚀 SCRAPE STARTED: {url}")
 
     with sync_playwright() as p:
+        logger.info("🧠 Launching Chromium browser")
 
         browser = p.chromium.launch(
             headless=True,
-            slow_mo=0,
             args=[
                 "--disable-notifications",
                 "--disable-geolocation",
@@ -1617,7 +1623,8 @@ def scrape_single_college(url):
                 "--no-sandbox",
                 "--disable-dev-shm-usage"
             ]
-        ) 
+        )
+
         try:
             page = browser.new_page(
                 user_agent=(
@@ -1625,88 +1632,96 @@ def scrape_single_college(url):
                     "AppleWebKit/537.36 (KHTML, like Gecko) "
                     "Chrome/121.0.0.0 Safari/537.36"
                 )
-            ) 
-            page.route("**/login**", lambda route: route.abort())
-            page.route("**/otp**", lambda route: route.abort())
-            page.route("**/auth**", lambda route: route.abort())
-            page.route("**/register**", lambda route: route.abort())
+            )
 
+            page.set_default_timeout(30_000)
+            page.set_default_navigation_timeout(30_000)
+
+            logger.info("🌐 Browser page created")
+
+            # block auth / login noise
+            page.route("**/login**", lambda r: r.abort())
+            page.route("**/otp**", lambda r: r.abort())
+            page.route("**/auth**", lambda r: r.abort())
+            page.route("**/register**", lambda r: r.abort())
 
             page.on("load", lambda: nuke_popups(page))
             page.on("domcontentloaded", lambda: nuke_popups(page))
-            page.on("framenavigated", lambda: nuke_popups(page))
 
+            output = {"url": url}
 
-            page.set_default_timeout(30000)
-            output = {}
-
-            output["url"] = url 
-        
-
+            # ================= MAIN PAGE =================
+            logger.info("📄 Scraping main info")
             output.update(scrape_main_info(page, url))
+
+            logger.info("🖼️ Scraping gallery")
             output["gallery"] = scrape_gallery(page, url)
 
+            logger.info("⭐ Scraping ratings")
             output["rating_categories"] = scrape_rating_categories(page, url)
+
+            logger.info("🏫 Scraping facilities & faculty")
             output["info_facilities"] = scrape_facilities(page, url)
             output["info_faculty"] = scrape_faculty(page, url)
-            output["info_course_fee"] = scrape_course_fee_structure(page, url)
 
+            logger.info("💰 Scraping fee structure")
+            output["info_course_fee"] = scrape_course_fee_structure(page, url)
             output["info_mba_fees_text"] = scrape_mba_fees_text(page, url)
 
-
-
-            page.goto(url, timeout=0)
-            page.wait_for_timeout(1500)
+            # ================= REVIEWS / NEWS =================
+            logger.info("📰 Scraping news & reviews")
             output["latest_news"] = get_latest_news(page)
             output["info_student_review"] = scrape_likes_dislikes(page, url)
-            output["info_yearly_students_placed"] = scrape_yearly_students_placed(page, url)
             output["reviews_data"] = scrape_reviews(page, url)
 
-
+            # ================= COURSES =================
+            logger.info("📚 Scraping courses")
             course_page = browser.new_page()
+            course_page.set_default_timeout(30_000)
             output["courses"] = scrape_college_courses(course_page, url)
             course_page.close()
 
             output["feesRange"] = build_fee_range(output["courses"])
-
-
             output["courses_full_time"] = scrape_full_time(page, url)
-
             output["courses_part_time"] = scrape_part_time(page, url)
 
+            # ================= EXTRA SECTIONS =================
+            logger.info("📅 Dates / Placement / QnA / Ranking")
             output["important_dates"] = scrape_important_dates(page, url)
-
             output["placement"] = scrape_placement_data(page, url)
-
             output["questions_answers"] = scrape_qna(page, url)
             output["admission"] = scrape_admission(page, url)
             output["ranking_data"] = scrape_ranking(page, url)
             output["stream"] = detect_stream(page, url)
 
+            # ================= COURSE DETAILS =================
+            logger.info("🔍 Scraping course detail pages")
             for c in output["courses"]:
                 if c.get("url"):
                     try:
-                        detail = scrape_course_detail(page, c["url"])
-                        c["details"] = detail
-                    except:
+                        c["details"] = scrape_course_detail(page, c["url"])
+                    except Exception as e:
+                        logger.warning(f"⚠️ Course detail failed: {e}")
                         c["details"] = None
- 
-                if c.get("sub_courses"):
-                    for sub in c["sub_courses"]:
-                        if sub.get("url"):
-                            try:
-                                sub["details"] = scrape_course_detail(page, sub["url"])
-                            except:
-                                sub["details"] = None 
 
+                for sub in c.get("sub_courses", []):
+                    if sub.get("url"):
+                        try:
+                            sub["details"] = scrape_course_detail(page, sub["url"])
+                        except Exception as e:
+                            logger.warning(f"⚠️ Sub-course detail failed: {e}")
+                            sub["details"] = None
 
-            return output        
-        finally:                  
+            logger.info("✅ SCRAPING COMPLETED SUCCESSFULLY")
+            return output
+
+        except Exception as e:
+            logger.exception("❌ SCRAPING CRASHED")
+            raise e
+
+        finally:
+            logger.info("🧹 Closing browser")
             browser.close()
-            # timer.cancel()
-
-        
-
 
 ###############################################################
 # RUN (API MODE)
