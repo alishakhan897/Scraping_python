@@ -31,7 +31,7 @@ async def scrape(payload: dict):
         )
 
         # TODO: tumhara scraper
-        scraped = run_full_scraper(url)
+        scraped = scrape_single_college(url)
 
         # completed
         collection.update_one(

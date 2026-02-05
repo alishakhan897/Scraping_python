@@ -15,27 +15,6 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 load_dotenv()
 
-#MONGO_URI = os.getenv("MONGO_URI")
-#DB_NAME = os.getenv("DB_NAME", "studycups")
-#TEMP_COLLECTION = os.getenv("TEMP_COLLECTION", "college_course_test")
-
-#client = MongoClient(MONGO_URI)
-#db = client[DB_NAME]
-#detail_collection = db[TEMP_COLLECTION]
-
-
-
-# def force_exit():
-#     print("[TIMEOUT] FORCE EXIT: Script took too long")
-#     os.kill(os.getpid(), signal.SIGTERM)
-
-# timer = threading.Timer(20, force_exit)  # 15 min
-# timer.start()
-
-
-
-
-
 
 def safe(node):
     try:
