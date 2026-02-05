@@ -13,7 +13,7 @@ db = client["studycups"]
 collection = db["college_course_test"]
 
 @app.post("/scrape")
-async def scrape(payload: dict):
+def scrape(payload: dict):
     url = payload.get("url")
     job_id = payload.get("jobId")
 
@@ -28,7 +28,7 @@ async def scrape(payload: dict):
             {"$set": {"status": "running", "progress": 10}}
         )
 
-        # ✅ NOW Python knows this function
+        # ✅ Sync Playwright is now SAFE
         scraped = scrape_single_college(url)
 
         collection.update_one(
